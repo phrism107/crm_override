@@ -13,6 +13,13 @@ console.log('Starting  :  Copying original src.')
 fs.copySync(path.join(crmAppPath, 'src'), overrideSrcPath)
 console.log('Completed :  Copying original src.')
 
+console.log('Starting  :  Copying original index.html.')
+fs.copySync(
+  path.join(crmAppPath, 'index.html'),
+  path.resolve(__dirname, './index.html'),
+)
+console.log('Completed :  Copying original index.html.')
+
 console.log('Starting  :  Overriding src.')
 fs.copySync(overrideFilesPath, overrideSrcPath)
 console.log('Completed :  Overriding src.')
