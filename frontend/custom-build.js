@@ -20,6 +20,13 @@ fs.copySync(
 )
 console.log('Completed :  Copying original index.html.')
 
+console.log('Starting  :  Copying original public assets.')
+fs.copySync(
+  path.join(crmAppPath, 'public'),
+  path.resolve(__dirname, './public'),
+)
+console.log('Completed :  Copying original public assets.')
+
 console.log('Starting  :  Overriding src.')
 fs.copySync(overrideFilesPath, overrideSrcPath)
 console.log('Completed :  Overriding src.')
