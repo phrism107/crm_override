@@ -2,97 +2,131 @@ import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import vueJsx from '@vitejs/plugin-vue-jsx'
 import path from 'path'
-import frappeui from 'frappe-ui/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
-export default defineConfig({
-  plugins: [
-    frappeui(),
-    vue({
-      script: {
-        propsDestructure: true,
-      },
-    }),
-    vueJsx(),
-    VitePWA({
-      registerType: 'autoUpdate',
-      devOptions: {
-        enabled: true,
-      },
-      manifest: {
-        display: 'standalone',
-        name: 'Phrism CRM',
-        short_name: 'Phrism CRM',
-        start_url: '/crm',
-        description: 'Phrism CRM',
-        icons: [
-          {
-            src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
-            sizes: '192x192',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-          {
-            src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'any',
-          },
-          {
-            src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
-            sizes: '512x512',
-            type: 'image/png',
-            purpose: 'maskable',
-          },
-        ],
-      },
-    }),
-    {
-      name: 'transform-index.html',
-      transformIndexHtml(html, context) {
-        if (!context.server) {
-          return html.replace(
-            /<\/body>/,
-            `
-            <script>
-                {% for key in boot %}
-                window["{{ key }}"] = {{ boot[key] | tojson }};
-                {% endfor %}
-            </script>
-            </body>
-            `
-          )
-        }
-        return html
-      },
-    },
-  ],
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
-  },
-  build: {
-    outDir: '../crm_override/public/frontend',
-    emptyOutDir: true,
-    commonjsOptions: {
-      include: [/tailwind.config.js/, /node_modules/],
-    },
-    sourcemap: true,
-  },
-  optimizeDeps: {
-    include: [
-      'feather-icons',
-      'showdown',
-      'tailwind.config.js',
-      'engine.io-client',
-      'prosemirror-state',
+// https://vitejs.dev/config/
+export default defineConfig(async ({ mode }) => {
+  const isDev = mode === 'development'
+  const config = {
+    plugins: [
+      vue(),
+      vueJsx(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        devOptions: {
+          enabled: true,
+        },
+        manifest: {
+          display: 'standalone',
+          name: 'Phrism CRM',
+          short_name: 'Phrism CRM',
+          start_url: '/crm',
+          description: 'Phrism CRM',
+          icons: [
+            {
+              src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/assets/crm/manifest/manifest-icon-192.maskable.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+            {
+              src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any',
+            },
+            {
+              src: '/assets/crm/manifest/manifest-icon-512.maskable.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable',
+            },
+          ],
+        },
+      }),
     ],
-  },
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, 'src'),
+      },
+    },
+    optimizeDeps: {
+      include: [
+        'feather-icons',
+        'tailwind.config.js',
+        'prosemirror-state',
+        'prosemirror-view',
+        'lowlight',
+        'interactjs',
+      ],
+    },
+    server: {
+      fs: {
+        allow: [path.resolve(__dirname, '..')],
+      },
+    },
+  }
+
+  const frappeui = await importFrappeUIPlugin(isDev, config)
+  config.plugins.unshift(
+    frappeui({
+      frappeProxy: true,
+      lucideIcons: true,
+      jinjaBootData: true,
+      buildConfig: {
+        indexHtmlPath: '../crm_override/www/crm.html',
+        emptyOutDir: true,
+        sourcemap: true,
+      },
+    }),
+  )
+
+  return config
 })
+
+async function importFrappeUIPlugin(isDev, config) {
+  if (isDev) {
+    try {
+      const fs = await import('node:fs')
+      const localVitePluginPath = path.resolve(__dirname, '../frappe-ui/vite')
+
+      if (fs.existsSync(localVitePluginPath)) {
+        const module = await import('../frappe-ui/vite')
+        console.info('Local frappe-ui vite plugin found, using local plugin')
+        config.resolve.alias = getAliases(config)
+        return module.default
+      } else {
+        console.warn('Local frappe-ui vite plugin not found, using npm package')
+      }
+    } catch (error) {
+      console.warn(
+        'Local frappe-ui not found, falling back to npm package:',
+        error.message,
+      )
+    }
+  }
+  const module = await import('frappe-ui/vite')
+  return module.default
+}
+
+function getAliases(config) {
+  return {
+    ...config.resolve.alias,
+    'frappe-ui/tailwind': path.resolve(
+      __dirname,
+      '../frappe-ui/tailwind/preset.js',
+    ),
+    'frappe-ui/style.css': path.resolve(
+      __dirname,
+      '../frappe-ui/src/style.css',
+    ),
+    'frappe-ui/frappe': path.resolve(__dirname, '../frappe-ui/frappe/index.js'),
+    'frappe-ui': path.resolve(__dirname, '../frappe-ui/src/index.ts'),
+  }
+}
