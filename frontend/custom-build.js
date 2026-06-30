@@ -1,17 +1,20 @@
-const fs = require('fs-extra');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'fs-extra'
+import path from 'path'
+import { execSync } from 'child_process'
+import { fileURLToPath } from 'url'
 
-const crmAppPath = path.resolve(__dirname, '../../crm/frontend');
-const overrideSrcPath = path.resolve(__dirname, './src');
-const overrideFilesPath = path.resolve(__dirname, './src_override');
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-console.log('Starting  :  Copying original src.');
-fs.copySync(path.join(crmAppPath, 'src'), overrideSrcPath);
-console.log('Completed :  Copying original src.');
+const crmAppPath = path.resolve(__dirname, '../../crm/frontend')
+const overrideSrcPath = path.resolve(__dirname, './src')
+const overrideFilesPath = path.resolve(__dirname, './src_override')
 
-console.log('Starting  :  Overriding src.');
-fs.copySync(overrideFilesPath, overrideSrcPath);
-console.log('Completed :  Overriding src.');
+console.log('Starting  :  Copying original src.')
+fs.copySync(path.join(crmAppPath, 'src'), overrideSrcPath)
+console.log('Completed :  Copying original src.')
 
-execSync('yarn install', { stdio: 'inherit' });
+console.log('Starting  :  Overriding src.')
+fs.copySync(overrideFilesPath, overrideSrcPath)
+console.log('Completed :  Overriding src.')
+
+execSync('yarn install', { stdio: 'inherit' })
