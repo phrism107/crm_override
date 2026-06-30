@@ -1,0 +1,6 @@
+app_name = "crm_override"
+app_title = "Phrism CRM Override"
+app_publisher = "Phrism"
+app_description = "Overrides Frappe CRM sidebar to show only Contacts and Organizations."
+app_email = "phrism107@gmail.com"
+app_license = "mit"
