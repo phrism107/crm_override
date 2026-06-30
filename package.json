@@ -1,0 +1,11 @@
+{
+  "private": true,
+  "type": "module",
+  "name": "crm_override",
+  "description": "Overrides Frappe CRM sidebar to show only Contacts and Organizations.",
+  "scripts": {
+    "postinstall": "cd frontend && yarn install --check-files",
+    "dev": "cd frontend && yarn dev",
+    "build": "cd frontend && yarn build"
+  }
+}
