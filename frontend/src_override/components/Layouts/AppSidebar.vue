@@ -218,19 +218,41 @@ const isFCSite = ref(window.is_fc_site)
 const isDemoSite = ref(window.is_demo_site)
 const showSalesHierarchyBanner = ref(!!window.show_sales_hierarchy_banner)
 
-// PHRISM: only Contacts and Organizations are exposed in the sidebar.
-// Original Frappe CRM links (Dashboard, Leads, Deals, Notes, Tasks,
-// Call Logs) intentionally removed.
+// PHRISM: the sidebar exposes the six pHRism CRM tabs in the order shown in
+// the reference design. "Projects" reuses the stock Deals page/doctype
+// (CRM Deal); "Interactions" and "Clients" are custom pHRism pages/routes.
+// All other original Frappe CRM links (Dashboard, Notes, Tasks, Call Logs)
+// are intentionally removed.
 const links = [
+  {
+    label: 'Organizations',
+    icon: OrganizationsIcon,
+    to: 'Organizations',
+  },
   {
     label: 'Contacts',
     icon: ContactsIcon,
     to: 'Contacts',
   },
   {
-    label: 'Organizations',
+    label: 'Interactions',
+    icon: PhoneIcon,
+    to: 'Interactions',
+  },
+  {
+    label: 'Projects',
+    icon: DealsIcon,
+    to: 'Deals',
+  },
+  {
+    label: 'Leads',
+    icon: LeadsIcon,
+    to: 'Leads',
+  },
+  {
+    label: 'Clients',
     icon: OrganizationsIcon,
-    to: 'Organizations',
+    to: 'Clients',
   },
 ]
 

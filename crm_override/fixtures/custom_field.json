@@ -1,0 +1,28 @@
+[
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-is_client",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "is_client",
+  "label": "Is Client",
+  "fieldtype": "Check",
+  "default": "0",
+  "insert_after": "industry",
+  "in_standard_filter": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-client_status",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "client_status",
+  "label": "Client Status",
+  "fieldtype": "Select",
+  "options": "Active\nInactive",
+  "default": "Active",
+  "insert_after": "is_client",
+  "depends_on": "eval:doc.is_client",
+  "in_standard_filter": 1
+ }
+]
