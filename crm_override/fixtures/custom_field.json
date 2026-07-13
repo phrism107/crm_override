@@ -1,6 +1,88 @@
 [
  {
   "doctype": "Custom Field",
+  "name": "CRM Organization-source",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "source",
+  "label": "Source",
+  "fieldtype": "Data",
+  "insert_after": "industry"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-enquiry_status",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "enquiry_status",
+  "label": "Status",
+  "fieldtype": "Select",
+  "options": "New\nContacted\nNurture\nQualified\nConverted\nUnqualified\nJunk",
+  "default": "New",
+  "insert_after": "source"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-received_date",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "received_date",
+  "label": "Lead Received Date",
+  "fieldtype": "Date",
+  "insert_after": "enquiry_status"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-whose_lead",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "whose_lead",
+  "label": "Whose Lead",
+  "fieldtype": "Data",
+  "insert_after": "received_date"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-person_first_name",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "person_first_name",
+  "label": "First Name",
+  "fieldtype": "Data",
+  "insert_after": "whose_lead"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-person_last_name",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "person_last_name",
+  "label": "Last Name",
+  "fieldtype": "Data",
+  "insert_after": "person_first_name"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-person_email",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "person_email",
+  "label": "Email",
+  "fieldtype": "Data",
+  "insert_after": "person_last_name"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-person_mobile_no",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "person_mobile_no",
+  "label": "Mobile No.",
+  "fieldtype": "Data",
+  "insert_after": "person_email"
+ },
+ {
+  "doctype": "Custom Field",
   "name": "CRM Organization-is_client",
   "dt": "CRM Organization",
   "module": "Crm Override",
