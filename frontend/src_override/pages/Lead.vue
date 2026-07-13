@@ -1,5 +1,5 @@
 <template>
-  <LayoutHeader>
+  <LayoutHeader v-if="doc.name">
     <template #left-header>
       <div class="flex items-center gap-2">
         <Button variant="ghost" @click="router.push({ name: 'Leads' })">
@@ -11,36 +11,60 @@
         <span class="text-base text-ink-gray-9">/ {{ doc.lead_name || leadId }}</span>
       </div>
     </template>
+    <template #right-header>
+      <Dropdown v-if="doc.status" :options="statuses" placement="right">
+        <template #default="{ open }">
+          <Button
+            :label="doc.status"
+            :iconRight="open ? 'chevron-up' : 'chevron-down'"
+          >
+            <template #prefix>
+              <span
+                class="h-2 w-2 rounded-full"
+                :style="{ backgroundColor: statusColor }"
+              />
+            </template>
+          </Button>
+        </template>
+      </Dropdown>
+      <Button
+        :label="__('Convert to Project')"
+        variant="solid"
+        @click="convertToProject"
+      />
+    </template>
   </LayoutHeader>
 
   <div v-if="doc.name" class="flex h-full">
-    <!-- Left: Details + Person -->
+    <!-- Left: editable Details + Person -->
     <div class="flex h-full w-[360px] flex-col overflow-y-auto border-r">
-      <div class="border-b p-5 text-sm text-ink-gray-6">{{ leadId }}</div>
-      <div class="p-5">
-        <div class="mb-3 text-base font-semibold text-ink-gray-9">
-          {{ __('Details') }}
-        </div>
-        <div class="flex flex-col gap-4">
-          <div v-for="f in details" :key="f.label" class="flex flex-col gap-1">
-            <div class="text-xs uppercase tracking-wide text-ink-gray-5">
-              {{ f.label }}
-            </div>
-            <div class="text-base text-ink-gray-8">{{ f.value || '-' }}</div>
+      <div class="border-b p-5">
+        <div class="text-sm text-ink-gray-6">{{ leadId }}</div>
+        <div class="mt-3 flex items-center gap-3">
+          <Avatar size="2xl" :label="doc.lead_name || leadId" />
+          <div class="text-xl font-medium text-ink-gray-9">
+            {{ doc.lead_name || leadId }}
           </div>
         </div>
-
-        <div class="mb-3 mt-6 text-base font-semibold text-ink-gray-9">
-          {{ __('Person') }}
+        <div class="mt-3 flex gap-1.5">
+          <Button :tooltip="__('Copy link')" icon="link" @click="copyLink" />
+          <Button
+            :tooltip="__('Delete')"
+            icon="trash-2"
+            theme="red"
+            variant="subtle"
+            @click="showDeleteModal = true"
+          />
         </div>
-        <div class="flex flex-col gap-4">
-          <div v-for="f in person" :key="f.label" class="flex flex-col gap-1">
-            <div class="text-xs uppercase tracking-wide text-ink-gray-5">
-              {{ f.label }}
-            </div>
-            <div class="text-base text-ink-gray-8">{{ f.value || '-' }}</div>
-          </div>
-        </div>
+      </div>
+      <div v-if="sections.data" class="flex-1 overflow-y-auto">
+        <SidePanelLayout
+          :sections="sections.data"
+          doctype="CRM Lead"
+          :docname="doc.name"
+          @reload="sections.reload"
+          @beforeFieldChange="() => lead.save.submit()"
+        />
       </div>
     </div>
 
@@ -73,13 +97,33 @@
       </div>
     </div>
   </div>
+
+  <DeleteLinkedDocModal
+    v-if="showDeleteModal"
+    v-model="showDeleteModal"
+    doctype="CRM Lead"
+    :docname="leadId"
+    name="Leads"
+  />
 </template>
 
 <script setup>
 import LayoutHeader from '@/components/LayoutHeader.vue'
+import SidePanelLayout from '@/components/SidePanelLayout.vue'
+import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
 import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
-import { Button, FeatherIcon, createResource } from 'frappe-ui'
-import { computed } from 'vue'
+import { useDocument } from '@/data/document'
+import { statusesStore } from '@/stores/statuses'
+import {
+  Avatar,
+  Button,
+  Dropdown,
+  FeatherIcon,
+  createResource,
+  call,
+  toast,
+} from 'frappe-ui'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -87,39 +131,54 @@ const props = defineProps({
 })
 
 const router = useRouter()
+const { statusOptions, getLeadStatus } = statusesStore()
 
-const lead = createResource({
-  url: 'frappe.client.get',
-  makeParams: () => ({ doctype: 'CRM Lead', name: props.leadId }),
+const { document: lead } = useDocument('CRM Lead', props.leadId)
+const doc = computed(() => lead.doc || {})
+
+const showDeleteModal = ref(false)
+
+const sections = createResource({
+  url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
+  cache: ['sidePanelSections', 'CRM Lead'],
+  params: { doctype: 'CRM Lead' },
   auto: true,
 })
 
-const doc = computed(() => lead.data || {})
+const statuses = computed(() => statusOptions('lead', [], triggerStatusChange))
 
-function formatDate(date) {
-  if (!date) return ''
-  const [y, m, d] = String(date).split(' ')[0].split('-')
-  return d && m && y ? `${d}-${m}-${y}` : date
+const statusColor = computed(() => {
+  const map = {
+    gray: '#8f8f8f', blue: '#3b82f6', green: '#22c55e', red: '#ef4444',
+    orange: '#f97316', amber: '#f59e0b', yellow: '#eab308', teal: '#14b8a6',
+    purple: '#a855f7', pink: '#ec4899', cyan: '#06b6d4', black: '#1f1f1f',
+  }
+  const c = doc.value.status && getLeadStatus(doc.value.status)?.color
+  return map[c] || '#8f8f8f'
+})
+
+function triggerStatusChange(value) {
+  lead.doc.status = value
+  lead.save.submit()
 }
 
-const details = computed(() => {
-  const d = doc.value
-  return [
-    { label: __('Organisation'), value: d.organization },
-    { label: __('Source'), value: d.source },
-    { label: __('Status'), value: d.status },
-    { label: __('Lead Received Date'), value: formatDate(d.lead_received_date) },
-    { label: __('Whose Lead'), value: d.whose_lead },
-  ]
-})
+async function convertToProject() {
+  try {
+    const deal = await call(
+      'crm.fcrm.doctype.crm_lead.crm_lead.convert_to_deal',
+      { lead: props.leadId },
+    )
+    if (deal) {
+      toast.success(__('Converted to Project'))
+      router.push({ name: 'Deal', params: { dealId: deal } })
+    }
+  } catch (e) {
+    toast.error(e.messages?.[0] || __('Could not convert to project'))
+  }
+}
 
-const person = computed(() => {
-  const d = doc.value
-  return [
-    { label: __('First Name'), value: d.first_name },
-    { label: __('Last Name'), value: d.last_name },
-    { label: __('Email'), value: d.email },
-    { label: __('Mobile No.'), value: d.mobile_no },
-  ]
-})
+function copyLink() {
+  navigator.clipboard?.writeText(window.location.href)
+  toast.success(__('Link copied'))
+}
 </script>
