@@ -86,6 +86,12 @@ const routes = [
     component: () => import('@/pages/Interactions.vue'),
   },
   {
+    path: '/interactions/:interactionId',
+    name: 'Interaction',
+    component: () => import('@/pages/Interaction.vue'),
+    props: true,
+  },
+  {
     alias: '/clients',
     path: '/clients',
     name: 'Clients',

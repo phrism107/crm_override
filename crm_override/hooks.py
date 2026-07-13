@@ -13,14 +13,7 @@ fixtures = [
 	{
 		"dt": "Custom Field",
 		"filters": [
-			[
-				"name",
-				"in",
-				[
-					"CRM Organization-is_client",
-					"CRM Organization-client_status",
-				],
-			]
+			["dt", "in", ["CRM Organization", "CRM Deal", "CRM Lead"]]
 		],
 	}
 ]

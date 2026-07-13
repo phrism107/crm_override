@@ -1,0 +1,622 @@
+<template>
+  <LayoutHeader v-if="contact.doc">
+    <template #left-header>
+      <Breadcrumbs :items="breadcrumbs">
+        <template #prefix="{ item }">
+          <Icon v-if="item.icon" :icon="item.icon" class="mr-2 h-4" />
+        </template>
+      </Breadcrumbs>
+    </template>
+    <template #right-header>
+      <CustomActions
+        v-if="contact._actions?.length"
+        :actions="contact._actions"
+      />
+    </template>
+  </LayoutHeader>
+  <div v-if="contact.doc" ref="parentRef" class="flex h-full">
+    <Resizer
+      v-if="contact.doc"
+      :parent="$refs.parentRef"
+      class="flex h-full flex-col overflow-hidden border-r"
+    >
+      <div class="border-b">
+        <FileUploader
+          :validateFile="validateIsImageFile"
+          @success="changeContactImage"
+        >
+          <template #default="{ openFileSelector, error }">
+            <div class="flex flex-col items-start justify-start gap-4 p-5">
+              <div class="flex gap-4 items-center">
+                <div class="group relative h-15.5 w-15.5">
+                  <Avatar
+                    size="3xl"
+                    class="h-15.5 w-15.5"
+                    :label="contact.doc.full_name"
+                    :image="contact.doc.image"
+                  />
+                  <component
+                    :is="contact.doc.image ? Dropdown : 'div'"
+                    v-bind="
+                      contact.doc.image
+                        ? {
+                            options: [
+                              {
+                                icon: 'upload',
+                                label: contact.doc.image
+                                  ? __('Change Image')
+                                  : __('Upload Image'),
+                                onClick: openFileSelector,
+                              },
+                              {
+                                icon: 'trash-2',
+                                label: __('Remove Image'),
+                                onClick: () => changeContactImage(''),
+                              },
+                            ],
+                          }
+                        : { onClick: openFileSelector }
+                    "
+                    class="!absolute bottom-0 left-0 right-0"
+                  >
+                    <div
+                      class="z-1 absolute bottom-0 left-0 right-0 flex h-14 cursor-pointer items-center justify-center rounded-b-full bg-black bg-opacity-40 pt-5 opacity-0 duration-300 ease-in-out group-hover:opacity-100"
+                      style="
+                        -webkit-clip-path: inset(22px 0 0 0);
+                        clip-path: inset(22px 0 0 0);
+                      "
+                    >
+                      <CameraIcon class="h-6 w-6 cursor-pointer text-white" />
+                    </div>
+                  </component>
+                </div>
+                <div class="flex flex-col gap-2 truncate text-ink-gray-9">
+                  <div class="truncate text-2xl font-medium">
+                    <span v-if="contact.doc.salutation">
+                      {{ contact.doc.salutation + ' ' }}
+                    </span>
+                    <span>{{ contact.doc.full_name }}</span>
+                  </div>
+                  <div
+                    v-if="contact.doc.company_name"
+                    class="flex items-center gap-1.5 text-base text-ink-gray-8"
+                  >
+                    {{ contact.doc.company_name }}
+                  </div>
+                  <ErrorMessage :message="__(error)" />
+                </div>
+              </div>
+              <div class="flex gap-1.5">
+                <Button
+                  v-if="callEnabled && contact.doc.mobile_no"
+                  :label="__('Make Call')"
+                  size="sm"
+                  :iconLeft="PhoneIcon"
+                  @click="callEnabled && makeCall(contact.doc.mobile_no)"
+                />
+                <Button
+                  v-if="canDelete"
+                  :label="__('Delete')"
+                  theme="red"
+                  size="sm"
+                  iconLeft="trash-2"
+                  @click="deleteContact()"
+                />
+              </div>
+            </div>
+          </template>
+        </FileUploader>
+      </div>
+      <div
+        v-if="sections.data"
+        class="flex flex-1 flex-col justify-between overflow-hidden"
+      >
+        <SidePanelLayout
+          :sections="parsedSections"
+          doctype="Contact"
+          :docname="contact.doc.name"
+          @reload="sections.reload"
+        />
+      </div>
+    </Resizer>
+    <Tabs
+      v-model="tabIndex"
+      as="div"
+      :tabs="tabs"
+      class="flex flex-1 overflow-hidden flex-col [&_[role='tab']]:px-0 [&_[role='tab']]:shrink-0 [&_[role='tablist']]:px-5 [&_[role='tablist']::-webkit-scrollbar]:h-0 [&_[role='tablist']]:min-h-[45px] [&_[role='tablist']]:gap-7.5 [&_[role='tabpanel']:not([hidden])]:flex [&_[role='tabpanel']:not([hidden])]:grow"
+    >
+      <template #tab-item="{ tab, selected }">
+        <button
+          class="group flex items-center gap-2 border-b border-transparent py-2.5 text-base text-ink-gray-5 duration-300 ease-in-out hover:text-ink-gray-9"
+          :class="{ 'text-ink-gray-9': selected }"
+        >
+          <component :is="tab.icon" v-if="tab.icon" class="h-5" />
+          {{ __(tab.label) }}
+          <Badge
+            class="group-hover:bg-surface-gray-7"
+            :class="[selected ? 'bg-surface-gray-7' : 'bg-gray-600']"
+            variant="solid"
+            theme="gray"
+            size="sm"
+          >
+            {{ tab.count }}
+          </Badge>
+        </button>
+      </template>
+      <template #tab-panel="{ tab }">
+        <div v-if="rows.length" class="flex-1 overflow-auto px-5">
+          <table class="w-full text-base">
+            <thead>
+              <tr class="border-b text-ink-gray-5 text-sm">
+                <th
+                  v-for="col in tab.columns"
+                  :key="col.key"
+                  class="py-2.5 pr-4 text-left font-normal"
+                >
+                  {{ __(col.label) }}
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr
+                v-for="row in rows"
+                :key="row.name"
+                class="border-b text-ink-gray-8"
+                :class="tab.route ? 'cursor-pointer hover:bg-surface-gray-1' : ''"
+                @click="tab.route && openRecord(tab, row.name)"
+              >
+                <td
+                  v-for="(col, i) in tab.columns"
+                  :key="col.key"
+                  class="py-3 pr-4"
+                  :class="i === 0 ? 'font-medium text-ink-gray-9' : ''"
+                >
+                  {{ row[col.key] || '-' }}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <EmptyState v-else :icon="tab.icon" :name="__(tab.label)" />
+      </template>
+    </Tabs>
+  </div>
+  <ErrorPage
+    v-else-if="errorTitle"
+    :errorTitle="errorTitle"
+    :errorMessage="errorMessage"
+  />
+  <DeleteLinkedDocModal
+    v-if="showDeleteLinkedDocModal"
+    v-model="showDeleteLinkedDocModal"
+    :doctype="'Contact'"
+    :docname="contact.doc.name"
+    name="Contacts"
+  />
+</template>
+
+<script setup>
+import ErrorPage from '@/components/ErrorPage.vue'
+import Resizer from '@/components/Resizer.vue'
+import Icon from '@/components/Icon.vue'
+import SidePanelLayout from '@/components/SidePanelLayout.vue'
+import LayoutHeader from '@/components/LayoutHeader.vue'
+import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
+import CameraIcon from '@/components/Icons/CameraIcon.vue'
+import LeadsIcon from '@/components/Icons/LeadsIcon.vue'
+import CustomActions from '@/components/CustomActions.vue'
+import { validateIsImageFile, setupCustomizations } from '@/utils'
+import { getView } from '@/utils/view'
+import { useDocument } from '@/data/document'
+import { getSettings } from '@/stores/settings'
+import { getMeta } from '@/stores/meta'
+import { globalStore } from '@/stores/global.js'
+import { callEnabled } from '@/composables/telephony'
+import {
+  Breadcrumbs,
+  Avatar,
+  FileUploader,
+  Tabs,
+  call,
+  createResource,
+  usePageMeta,
+  Dropdown,
+  toast,
+} from 'frappe-ui'
+import { useDoctypeModal } from '@/composables/doctypeModal'
+import { useTelemetry } from 'frappe-ui/frappe'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import EmptyState from '@/components/ListViews/EmptyState.vue'
+
+const { brand } = getSettings()
+const { makeCall, $dialog, $socket } = globalStore()
+
+const { doctypeMeta } = getMeta('Contact')
+const { capture } = useTelemetry()
+
+const props = defineProps({
+  contactId: { type: String, required: true },
+})
+
+const route = useRoute()
+const router = useRouter()
+
+const errorTitle = ref('')
+const errorMessage = ref('')
+
+const {
+  document: contact,
+  permissions,
+  scripts,
+  triggerOnRender,
+} = useDocument('Contact', props.contactId)
+
+const canDelete = computed(() => permissions.data?.permissions?.delete || false)
+
+onMounted(async () => {
+  if (contact.doc) await triggerOnRender()
+})
+
+const breadcrumbs = computed(() => {
+  let items = [{ label: __('Contacts'), route: { name: 'Contacts' } }]
+
+  if (route.query.view || route.query.viewType) {
+    let view = getView(route.query.view, route.query.viewType, 'Contact')
+    if (view) {
+      items.push({
+        label: __(view.label),
+        icon: view.icon,
+        route: {
+          name: 'Contacts',
+          params: { viewType: route.query.viewType },
+          query: { view: route.query.view },
+        },
+      })
+    }
+  }
+
+  items.push({
+    label: title.value,
+    route: { name: 'Contact', params: { contactId: props.contactId } },
+  })
+  return items
+})
+
+const title = computed(() => {
+  let t = doctypeMeta.value?.title_field || 'name'
+  return contact.doc?.[t] || props.contactId
+})
+
+usePageMeta(() => {
+  return {
+    title: title.value,
+    icon: brand.favicon,
+  }
+})
+const showDeleteLinkedDocModal = ref(false)
+
+async function deleteContact() {
+  showDeleteLinkedDocModal.value = true
+}
+
+function changeContactImage(file) {
+  contact.doc.image = file?.file_url || ''
+  contact.save.submit(null, {
+    onSuccess: () => {
+      toast.success(__('Contact image updated'))
+    },
+  })
+}
+
+// ---------------------------------------------------------------------------
+// PHRISM: related tabs -> Interactions, Leads
+// ---------------------------------------------------------------------------
+function formatDate(date) {
+  if (!date) return ''
+  const [y, m, d] = String(date).split(' ')[0].split('-')
+  return d && m && y ? `${d}-${m}-${y}` : date
+}
+
+const interactions = createResource({
+  url: 'frappe.client.get_list',
+  makeParams: () => ({
+    doctype: 'CRM Interaction',
+    fields: [
+      'name',
+      'subject',
+      'interaction_type',
+      'source',
+      'interaction_date',
+    ],
+    filters: { contact: props.contactId },
+    order_by: 'interaction_date desc',
+    limit_page_length: 0,
+  }),
+  auto: true,
+})
+
+const leads = createResource({
+  url: 'frappe.client.get_list',
+  makeParams: () => ({
+    doctype: 'CRM Lead',
+    fields: ['name', 'lead_name', 'status', 'source', 'lead_received_date'],
+    filters: { email: contact.doc?.email_id || '__none__' },
+    order_by: 'modified desc',
+    limit_page_length: 0,
+  }),
+  auto: false,
+})
+
+watch(
+  () => contact.doc?.email_id,
+  (email) => {
+    if (email) leads.reload()
+  },
+  { immediate: true },
+)
+
+const tabIndex = ref(0)
+const tabs = [
+  {
+    label: 'Interactions',
+    icon: PhoneIcon,
+    route: 'Interaction',
+    resource: interactions,
+    count: computed(() => interactions.data?.length || 0),
+    columns: [
+      { label: 'Subject', key: 'subject' },
+      { label: 'Type', key: 'interaction_type' },
+      { label: 'Source', key: 'source' },
+      { label: 'Date', key: 'interaction_date' },
+    ],
+    transform: (i) => ({
+      name: i.name,
+      subject: i.subject,
+      interaction_type: i.interaction_type,
+      source: i.source,
+      interaction_date: formatDate(i.interaction_date),
+    }),
+  },
+  {
+    label: 'Leads',
+    icon: LeadsIcon,
+    route: 'Lead',
+    resource: leads,
+    count: computed(() => leads.data?.length || 0),
+    columns: [
+      { label: 'Name', key: 'lead_name' },
+      { label: 'Status', key: 'status' },
+      { label: 'Source', key: 'source' },
+      { label: 'Lead Received', key: 'lead_received_date' },
+    ],
+    transform: (l) => ({
+      name: l.name,
+      lead_name: l.lead_name,
+      status: l.status,
+      source: l.source,
+      lead_received_date: formatDate(l.lead_received_date),
+    }),
+  },
+]
+
+const rows = computed(() => {
+  const tab = tabs[tabIndex.value]
+  const data = tab.resource.data || []
+  return data.map(tab.transform)
+})
+
+function openRecord(tab, name) {
+  if (!tab.route) return
+  const paramKey = tab.route === 'Interaction' ? 'interactionId' : 'leadId'
+  router.push({ name: tab.route, params: { [paramKey]: name } })
+}
+
+const sections = createResource({
+  url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
+  cache: ['sidePanelSections', 'Contact'],
+  params: { doctype: 'Contact' },
+  auto: true,
+})
+
+const parsedSections = computed(() => {
+  if (!sections.data) return []
+  return sections.data.map((section) => ({
+    ...section,
+    columns: section.columns.map((column) => ({
+      ...column,
+      fields: column.fields.map((field) => {
+        field.label = fieldLabelMap[field.fieldname] || field.label
+        field.placeholder =
+          fieldPlaceholderMap[field.fieldname] || field.placeholder
+
+        if (field.fieldname === 'email_id') {
+          return {
+            ...field,
+            read_only: false,
+            fieldtype: 'Dropdown',
+            options: (contact.doc?.email_ids || []).map((email) => ({
+              name: email.name,
+              value: email.email_id,
+              selected: email.email_id === contact.doc.email_id,
+              placeholder: 'john@doe.com',
+              onClick: () => setAsPrimary('email', email.email_id),
+              onSave: (option, isNew) =>
+                isNew
+                  ? createNew('email', option.value)
+                  : editOption(
+                      'Contact Email',
+                      option.name,
+                      'email_id',
+                      option.value,
+                    ),
+              onDelete: async (option, isNew) => {
+                contact.doc.email_ids = contact.doc.email_ids.filter(
+                  (e) => e.name !== option.name,
+                )
+                if (!isNew) await deleteOption('Contact Email', option.name)
+              },
+            })),
+            create: () => {
+              contact.doc.email_ids = [
+                ...(contact.doc.email_ids || []),
+                {
+                  name: 'new-1',
+                  value: '',
+                  selected: false,
+                  isNew: true,
+                },
+              ]
+            },
+          }
+        }
+        if (field.fieldname === 'mobile_no') {
+          return {
+            ...field,
+            read_only: false,
+            fieldtype: 'Dropdown',
+            options: (contact.doc?.phone_nos || []).map((phone) => ({
+              name: phone.name,
+              value: phone.phone,
+              selected: phone.phone === contact.doc.mobile_no,
+              onClick: () => setAsPrimary('mobile_no', phone.phone),
+              onSave: (option, isNew) =>
+                isNew
+                  ? createNew('phone', option.value)
+                  : editOption(
+                      'Contact Phone',
+                      option.name,
+                      'phone',
+                      option.value,
+                    ),
+              onDelete: async (option, isNew) => {
+                contact.doc.phone_nos = contact.doc.phone_nos.filter(
+                  (p) => p.name !== option.name,
+                )
+                if (!isNew) await deleteOption('Contact Phone', option.name)
+              },
+            })),
+            create: () => {
+              contact.doc.phone_nos = [
+                ...(contact.doc.phone_nos || []),
+                {
+                  name: 'new-1',
+                  value: '',
+                  selected: false,
+                  isNew: true,
+                },
+              ]
+            },
+          }
+        }
+        if (field.fieldname === 'address') {
+          return {
+            ...field,
+            create: (_value, close) => {
+              showAddressModal()
+              close?.()
+            },
+            edit: (address) => showAddressModal(address),
+          }
+        }
+        return field
+      }),
+    })),
+  }))
+})
+
+const fieldLabelMap = {
+  mobile_no: __('Mobile Number'),
+  company_name: __('Organization'),
+}
+
+const fieldPlaceholderMap = {
+  mobile_no: __('Add Mobile Number...'),
+  company_name: __('Add Organization...'),
+}
+
+async function setAsPrimary(field, value) {
+  let d = await call('crm.api.contact.set_as_primary', {
+    contact: contact.doc.name,
+    field,
+    value,
+  })
+  if (d) {
+    contact.reload()
+    toast.success(__('Contact Updated'))
+  }
+}
+
+async function createNew(field, value) {
+  if (!value) return
+  let d = await call('crm.api.contact.create_new', {
+    contact: contact.doc.name,
+    field,
+    value,
+  })
+  if (d) {
+    contact.reload()
+    toast.success(__('Contact Updated'))
+  }
+}
+
+async function editOption(doctype, name, fieldname, value) {
+  let d = await call('frappe.client.set_value', {
+    doctype,
+    name,
+    fieldname,
+    value,
+  })
+  if (d) {
+    contact.reload()
+    toast.success(__('Contact Updated'))
+  }
+}
+
+async function deleteOption(doctype, name) {
+  await call('frappe.client.delete', {
+    doctype,
+    name,
+  })
+  await contact.reload()
+  toast.success(__('Contact Updated'))
+}
+
+const { showModal } = useDoctypeModal()
+
+function showAddressModal(_address) {
+  showModal({
+    name: _address || null,
+    doctype: 'Address',
+    callbacks: {
+      afterInsert: (d) => {
+        capture('address_created')
+        contact.doc.address = d.name
+        contact.save.submit()
+      },
+    },
+  })
+}
+
+// Setup custom actions from Form Scripts
+watch(
+  () => contact.doc,
+  async (_doc) => {
+    if (scripts.data?.length) {
+      let s = await setupCustomizations(scripts.data, {
+        doc: _doc,
+        $dialog,
+        $socket,
+        router,
+        toast,
+        updateField: contact.setValue.submit,
+        createToast: toast.create,
+        deleteDoc: deleteContact,
+        call,
+      })
+      contact._actions = s.actions || []
+    }
+  },
+  { once: true },
+)
+</script>

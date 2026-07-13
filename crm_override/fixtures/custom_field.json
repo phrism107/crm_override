@@ -24,5 +24,100 @@
   "insert_after": "is_client",
   "depends_on": "eval:doc.is_client",
   "in_standard_filter": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Organization-verification_status",
+  "dt": "CRM Organization",
+  "module": "Crm Override",
+  "fieldname": "verification_status",
+  "label": "Verification Status",
+  "fieldtype": "Select",
+  "options": "Not Verified\nVerified",
+  "default": "Not Verified",
+  "insert_after": "client_status",
+  "in_standard_filter": 1
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-project_title",
+  "dt": "CRM Deal",
+  "module": "Crm Override",
+  "fieldname": "project_title",
+  "label": "Project Title",
+  "fieldtype": "Data",
+  "insert_after": "naming_series"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-engagement_type",
+  "dt": "CRM Deal",
+  "module": "Crm Override",
+  "fieldname": "engagement_type",
+  "label": "Engagement Type",
+  "fieldtype": "Select",
+  "options": "\nCoaching\nWorkshop\nConsulting\nAdvisory",
+  "insert_after": "project_title"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-project_size",
+  "dt": "CRM Deal",
+  "module": "Crm Override",
+  "fieldname": "project_size",
+  "label": "Project Size",
+  "fieldtype": "Currency",
+  "options": "currency",
+  "insert_after": "engagement_type"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-engagement_start_date",
+  "dt": "CRM Deal",
+  "module": "Crm Override",
+  "fieldname": "engagement_start_date",
+  "label": "Engagement Start Date",
+  "fieldtype": "Date",
+  "insert_after": "project_size"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-engagement_end_date",
+  "dt": "CRM Deal",
+  "module": "Crm Override",
+  "fieldname": "engagement_end_date",
+  "label": "Engagement End Date",
+  "fieldtype": "Date",
+  "insert_after": "engagement_start_date"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Deal-brief_detail",
+  "dt": "CRM Deal",
+  "module": "Crm Override",
+  "fieldname": "brief_detail",
+  "label": "Brief Detail",
+  "fieldtype": "Small Text",
+  "insert_after": "engagement_end_date"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-whose_lead",
+  "dt": "CRM Lead",
+  "module": "Crm Override",
+  "fieldname": "whose_lead",
+  "label": "Whose Lead",
+  "fieldtype": "Data",
+  "insert_after": "lead_owner"
+ },
+ {
+  "doctype": "Custom Field",
+  "name": "CRM Lead-lead_received_date",
+  "dt": "CRM Lead",
+  "module": "Crm Override",
+  "fieldname": "lead_received_date",
+  "label": "Lead Received Date",
+  "fieldtype": "Date",
+  "insert_after": "whose_lead"
  }
 ]
