@@ -57,8 +57,7 @@
           <tr
             v-for="row in rows"
             :key="row.name"
-            class="border-b text-ink-gray-8 cursor-pointer hover:bg-surface-gray-1"
-            @click="openInteraction(row.name)"
+            class="border-b text-ink-gray-8 hover:bg-surface-gray-1"
           >
             <td class="py-3 pr-4">{{ row.organization }}</td>
             <td class="py-3 pr-4">{{ row.interaction_type }}</td>
@@ -85,12 +84,6 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import PhoneIcon from '@/components/Icons/PhoneIcon.vue'
 import { FormControl, createResource } from 'frappe-ui'
 import { ref, reactive, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-function openInteraction(name) {
-  router.push({ name: 'Interaction', params: { interactionId: name } })
-}
 
 const filters = reactive({
   organization: '',

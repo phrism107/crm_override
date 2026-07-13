@@ -10,17 +10,12 @@
   "organization",
   "interaction_type",
   "source",
-  "status",
   "column_break_main",
   "contact",
   "contact_name",
   "interaction_date",
-  "interaction_time",
-  "follow_up",
-  "follow_up_date",
   "section_break_subject",
   "subject",
-  "description",
   "notes"
  ],
  "fields": [
@@ -50,15 +45,6 @@
    "options": "Call\nEmail\nIn person"
   },
   {
-   "default": "Done",
-   "fieldname": "status",
-   "fieldtype": "Select",
-   "in_list_view": 1,
-   "in_standard_filter": 1,
-   "label": "Status",
-   "options": "Planned\nDone\nCancelled"
-  },
-  {
    "fieldname": "column_break_main",
    "fieldtype": "Column Break"
   },
@@ -84,23 +70,6 @@
    "label": "Date"
   },
   {
-   "fieldname": "interaction_time",
-   "fieldtype": "Time",
-   "label": "Time"
-  },
-  {
-   "default": "0",
-   "fieldname": "follow_up",
-   "fieldtype": "Check",
-   "label": "Follow Up"
-  },
-  {
-   "depends_on": "eval:doc.follow_up",
-   "fieldname": "follow_up_date",
-   "fieldtype": "Date",
-   "label": "Follow Up Date"
-  },
-  {
    "fieldname": "section_break_subject",
    "fieldtype": "Section Break"
   },
@@ -109,11 +78,6 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Subject"
-  },
-  {
-   "fieldname": "description",
-   "fieldtype": "Small Text",
-   "label": "Description"
   },
   {
    "fieldname": "notes",

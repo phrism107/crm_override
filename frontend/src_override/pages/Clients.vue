@@ -41,8 +41,7 @@
           <tr
             v-for="row in rows"
             :key="row.name"
-            class="border-b text-ink-gray-8 cursor-pointer hover:bg-surface-gray-1"
-            @click="openClient(row.name)"
+            class="border-b text-ink-gray-8 hover:bg-surface-gray-1"
           >
             <td class="py-3 pr-4">
               <span class="flex items-center gap-2">
@@ -76,12 +75,6 @@ import LayoutHeader from '@/components/LayoutHeader.vue'
 import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import { FormControl, createResource } from 'frappe-ui'
 import { ref, reactive, computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-function openClient(name) {
-  router.push({ name: 'Organization', params: { organizationId: name } })
-}
 
 const filters = reactive({
   organization: '',
