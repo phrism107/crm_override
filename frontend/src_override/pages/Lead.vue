@@ -12,6 +12,14 @@
       </div>
     </template>
     <template #right-header>
+      <Button
+        :label="__('Activity Log')"
+        @click="rightTab = 'activity'"
+      >
+        <template #prefix>
+          <FeatherIcon name="clock" class="h-4 w-4" />
+        </template>
+      </Button>
       <Dropdown v-if="doc.status" :options="statuses" placement="right">
         <template #default="{ open }">
           <Button
@@ -68,17 +76,38 @@
       </div>
     </div>
 
-    <!-- Right: Organisation -->
+    <!-- Right: Organisation / Activity Log tabs -->
     <div class="flex flex-1 flex-col overflow-hidden">
-      <div class="flex items-center gap-2 border-b px-5 min-h-[45px]">
-        <div
-          class="flex items-center gap-2 border-b border-ink-gray-9 py-2.5 text-base text-ink-gray-9"
+      <div class="flex items-center gap-6 border-b px-5 min-h-[45px]">
+        <button
+          class="flex items-center gap-2 border-b py-2.5 text-base"
+          :class="
+            rightTab === 'organisation'
+              ? 'border-ink-gray-9 text-ink-gray-9'
+              : 'border-transparent text-ink-gray-5'
+          "
+          @click="rightTab = 'organisation'"
         >
           <OrganizationsIcon class="h-4 w-4" />
           {{ __('Organisation') }}
-        </div>
+        </button>
+        <button
+          class="flex items-center gap-2 border-b py-2.5 text-base"
+          :class="
+            rightTab === 'activity'
+              ? 'border-ink-gray-9 text-ink-gray-9'
+              : 'border-transparent text-ink-gray-5'
+          "
+          @click="rightTab = 'activity'"
+        >
+          <FeatherIcon name="clock" class="h-4 w-4" />
+          {{ __('Activity Log') }}
+          <Badge v-if="activities.length" :label="String(activities.length)" theme="gray" />
+        </button>
       </div>
-      <div class="p-5">
+
+      <!-- Organisation -->
+      <div v-if="rightTab === 'organisation'" class="p-5">
         <div
           v-if="doc.organization"
           class="cursor-pointer rounded border px-4 py-3 text-base text-ink-blue-3 hover:bg-surface-gray-1"
@@ -93,6 +122,72 @@
         </div>
         <div v-else class="text-base text-ink-gray-5">
           {{ __('No organisation linked') }}
+        </div>
+      </div>
+
+      <!-- Activity Log -->
+      <div v-else class="flex flex-1 flex-col overflow-auto p-5">
+        <div class="mb-4 flex items-center justify-between">
+          <div class="text-base font-semibold text-ink-gray-9">
+            {{ __('Activity Log') }}
+          </div>
+          <Button
+            :label="showForm ? __('Cancel') : __('Add Activity')"
+            :iconLeft="showForm ? '' : 'plus'"
+            variant="subtle"
+            @click="showForm = !showForm"
+          />
+        </div>
+
+        <!-- Add form -->
+        <div
+          v-if="showForm"
+          class="mb-5 grid grid-cols-2 gap-3 rounded border p-4"
+        >
+          <FormControl type="date" :label="__('Activity Date')" v-model="form.activity_date" />
+          <FormControl type="time" :label="__('Activity Time')" v-model="form.activity_time" />
+          <FormControl type="select" :label="__('Activity Type')" :options="typeOptions" v-model="form.activity_type" />
+          <FormControl type="select" :label="__('Activity Status')" :options="statusOptionsList" v-model="form.activity_status" />
+          <FormControl type="select" :label="__('Communication Method')" :options="methodOptions" v-model="form.communication_method" />
+          <FormControl type="text" :label="__('Performed By')" v-model="form.performed_by" />
+          <div class="col-span-2">
+            <FormControl type="text" :label="__('Subject')" v-model="form.subject" />
+          </div>
+          <div class="col-span-2">
+            <FormControl type="textarea" :label="__('Notes / Description')" v-model="form.notes" />
+          </div>
+          <div class="col-span-2 flex justify-end">
+            <Button :label="__('Save Activity')" variant="solid" @click="addActivity" />
+          </div>
+        </div>
+
+        <!-- Activity table -->
+        <table v-if="activities.length" class="w-full text-base">
+          <thead>
+            <tr class="border-b text-ink-gray-5 text-sm">
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Date') }}</th>
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Time') }}</th>
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Type') }}</th>
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Method') }}</th>
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Status') }}</th>
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Subject') }}</th>
+              <th class="py-2 pr-3 text-left font-normal">{{ __('Performed By') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(a, i) in activities" :key="i" class="border-b text-ink-gray-8">
+              <td class="py-2 pr-3 whitespace-nowrap">{{ formatDate(a.activity_date) }}</td>
+              <td class="py-2 pr-3 whitespace-nowrap">{{ a.activity_time || '-' }}</td>
+              <td class="py-2 pr-3">{{ a.activity_type || '-' }}</td>
+              <td class="py-2 pr-3">{{ a.communication_method || '-' }}</td>
+              <td class="py-2 pr-3">{{ a.activity_status || '-' }}</td>
+              <td class="py-2 pr-3">{{ a.subject || '-' }}</td>
+              <td class="py-2 pr-3">{{ a.performed_by || '-' }}</td>
+            </tr>
+          </tbody>
+        </table>
+        <div v-else class="py-10 text-center text-ink-gray-5">
+          {{ __('No activities logged yet') }}
         </div>
       </div>
     </div>
@@ -114,16 +209,19 @@ import DeleteLinkedDocModal from '@/components/DeleteLinkedDocModal.vue'
 import OrganizationsIcon from '@/components/Icons/OrganizationsIcon.vue'
 import { useDocument } from '@/data/document'
 import { statusesStore } from '@/stores/statuses'
+import { sessionStore } from '@/stores/session'
 import {
   Avatar,
+  Badge,
   Button,
   Dropdown,
   FeatherIcon,
+  FormControl,
   createResource,
   call,
   toast,
 } from 'frappe-ui'
-import { ref, computed } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 const props = defineProps({
@@ -132,11 +230,16 @@ const props = defineProps({
 
 const router = useRouter()
 const { statusOptions, getLeadStatus } = statusesStore()
+const { user } = sessionStore()
 
 const { document: lead } = useDocument('CRM Lead', props.leadId)
 const doc = computed(() => lead.doc || {})
 
 const showDeleteModal = ref(false)
+const rightTab = ref('organisation')
+const showForm = ref(false)
+
+const activities = computed(() => doc.value.activity_log || [])
 
 const sections = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
@@ -162,6 +265,51 @@ function triggerStatusChange(value) {
   lead.save.submit()
 }
 
+// --- Activity Log ---
+const typeOptions = ['Referral', 'Proposal', 'Call', 'Meeting', 'Follow-up', 'Other'].map(
+  (v) => ({ label: v, value: v }),
+)
+const statusOptionsList = ['Scheduled', 'Completed', 'Cancelled'].map((v) => ({
+  label: v,
+  value: v,
+}))
+const methodOptions = ['Call', 'Email', 'Meeting'].map((v) => ({ label: v, value: v }))
+
+function today() {
+  return new Date().toISOString().slice(0, 10)
+}
+
+const form = reactive(blankForm())
+
+function blankForm() {
+  return {
+    activity_date: today(),
+    activity_time: '',
+    activity_type: '',
+    activity_status: 'Scheduled',
+    communication_method: '',
+    performed_by: user,
+    subject: '',
+    notes: '',
+  }
+}
+
+function addActivity() {
+  if (!form.subject) {
+    toast.error(__('Please add a subject'))
+    return
+  }
+  lead.doc.activity_log = [...(lead.doc.activity_log || []), { ...form }]
+  lead.save.submit(null, {
+    onSuccess: () => {
+      toast.success(__('Activity logged'))
+      Object.assign(form, blankForm())
+      showForm.value = false
+    },
+    onError: (e) => toast.error(e?.messages?.[0] || __('Could not save activity')),
+  })
+}
+
 async function convertToProject() {
   try {
     const deal = await call(
@@ -180,5 +328,11 @@ async function convertToProject() {
 function copyLink() {
   navigator.clipboard?.writeText(window.location.href)
   toast.success(__('Link copied'))
+}
+
+function formatDate(date) {
+  if (!date) return '-'
+  const [y, m, d] = String(date).split(' ')[0].split('-')
+  return d && m && y ? `${d}-${m}-${y}` : date
 }
 </script>

@@ -1,6 +1,17 @@
 [
  {
   "doctype": "Custom Field",
+  "name": "CRM Lead-activity_log",
+  "dt": "CRM Lead",
+  "module": "Crm Override",
+  "fieldname": "activity_log",
+  "label": "Activity Log",
+  "fieldtype": "Table",
+  "options": "CRM Lead Activity",
+  "insert_after": "lead_received_date"
+ },
+ {
+  "doctype": "Custom Field",
   "name": "CRM Organization-is_client",
   "dt": "CRM Organization",
   "module": "Crm Override",
