@@ -17,3 +17,14 @@ fixtures = [
 		],
 	}
 ]
+
+# Document Events
+# -----------------------------------------------------------------------------
+# CRM Lead.organization is a free-text field; create the matching
+# CRM Organization whenever a lead names one that doesn't exist yet.
+doc_events = {
+	"CRM Lead": {
+		"after_insert": "crm_override.api.sync_lead_organization",
+		"on_update": "crm_override.api.sync_lead_organization",
+	}
+}
