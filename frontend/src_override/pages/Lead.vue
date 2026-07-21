@@ -172,6 +172,7 @@
               <th class="py-2 pr-3 text-left font-normal">{{ __('Status') }}</th>
               <th class="py-2 pr-3 text-left font-normal">{{ __('Subject') }}</th>
               <th class="py-2 pr-3 text-left font-normal">{{ __('Performed By') }}</th>
+              <th class="py-2 text-right font-normal"></th>
             </tr>
           </thead>
           <tbody>
@@ -183,6 +184,15 @@
               <td class="py-2 pr-3">{{ a.activity_status || '-' }}</td>
               <td class="py-2 pr-3">{{ a.subject || '-' }}</td>
               <td class="py-2 pr-3">{{ a.performed_by || '-' }}</td>
+              <td class="py-2 text-right">
+                <Button
+                  :tooltip="__('Delete activity')"
+                  icon="trash-2"
+                  theme="red"
+                  variant="ghost"
+                  @click="deleteActivity(i)"
+                />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -307,6 +317,14 @@ function addActivity() {
       showForm.value = false
     },
     onError: (e) => toast.error(e?.messages?.[0] || __('Could not save activity')),
+  })
+}
+
+function deleteActivity(idx) {
+  lead.doc.activity_log = activities.value.filter((_, i) => i !== idx)
+  lead.save.submit(null, {
+    onSuccess: () => toast.success(__('Activity deleted')),
+    onError: (e) => toast.error(e?.messages?.[0] || __('Could not delete activity')),
   })
 }
 
