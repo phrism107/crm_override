@@ -265,7 +265,15 @@ const rightTab = ref('organisation')
 const showForm = ref(false)
 const editingIndex = ref(null)
 
-const activities = computed(() => doc.value.activity_log || [])
+// Oldest first, by date then time. Sorted on a copy so the document's own
+// array is left untouched; undated rows sink to the bottom.
+const activities = computed(() =>
+  [...(doc.value.activity_log || [])].sort((a, b) => {
+    const keyA = `${a.activity_date || '9999-12-31'} ${a.activity_time || '99:99:99'}`
+    const keyB = `${b.activity_date || '9999-12-31'} ${b.activity_time || '99:99:99'}`
+    return keyA.localeCompare(keyB)
+  }),
+)
 
 const sections = createResource({
   url: 'crm.fcrm.doctype.crm_fields_layout.crm_fields_layout.get_sidepanel_sections',
