@@ -135,7 +135,7 @@
             :label="showForm ? __('Cancel') : __('Add Activity')"
             :iconLeft="showForm ? '' : 'plus'"
             variant="subtle"
-            @click="showForm = !showForm"
+            @click="showForm ? closeForm() : startAdd()"
           />
         </div>
 
@@ -157,7 +157,11 @@
             <FormControl type="textarea" :label="__('Notes / Description')" v-model="form.notes" />
           </div>
           <div class="col-span-2 flex justify-end">
-            <Button :label="__('Save Activity')" variant="solid" @click="addActivity" />
+            <Button
+              :label="editingIndex === null ? __('Save Activity') : __('Update Activity')"
+              variant="solid"
+              @click="saveActivity"
+            />
           </div>
         </div>
 
@@ -176,7 +180,12 @@
             </tr>
           </thead>
           <tbody>
-            <tr v-for="(a, i) in activities" :key="i" class="border-b text-ink-gray-8">
+            <tr
+              v-for="(a, i) in activities"
+              :key="i"
+              class="border-b text-ink-gray-8"
+              :class="editingIndex === i ? 'bg-surface-gray-1' : ''"
+            >
               <td class="py-2 pr-3 whitespace-nowrap">{{ formatDate(a.activity_date) }}</td>
               <td class="py-2 pr-3 whitespace-nowrap">{{ a.activity_time || '-' }}</td>
               <td class="py-2 pr-3">{{ a.activity_type || '-' }}</td>
@@ -184,7 +193,13 @@
               <td class="py-2 pr-3">{{ a.activity_status || '-' }}</td>
               <td class="py-2 pr-3">{{ a.subject || '-' }}</td>
               <td class="py-2 pr-3">{{ a.performed_by || '-' }}</td>
-              <td class="py-2 text-right">
+              <td class="py-2 text-right whitespace-nowrap">
+                <Button
+                  :tooltip="__('Edit activity')"
+                  icon="edit-2"
+                  variant="ghost"
+                  @click="startEdit(i)"
+                />
                 <Button
                   :tooltip="__('Delete activity')"
                   icon="trash-2"
@@ -248,6 +263,7 @@ const doc = computed(() => lead.doc || {})
 const showDeleteModal = ref(false)
 const rightTab = ref('organisation')
 const showForm = ref(false)
+const editingIndex = ref(null)
 
 const activities = computed(() => doc.value.activity_log || [])
 
@@ -304,23 +320,60 @@ function blankForm() {
   }
 }
 
-function addActivity() {
+function startAdd() {
+  editingIndex.value = null
+  Object.assign(form, blankForm())
+  showForm.value = true
+}
+
+function startEdit(idx) {
+  const a = activities.value[idx]
+  editingIndex.value = idx
+  Object.assign(form, blankForm(), {
+    activity_date: a.activity_date || today(),
+    activity_time: a.activity_time || '',
+    activity_type: a.activity_type || '',
+    activity_status: a.activity_status || 'Scheduled',
+    communication_method: a.communication_method || '',
+    performed_by: a.performed_by || user,
+    subject: a.subject || '',
+    notes: a.notes || '',
+  })
+  showForm.value = true
+}
+
+function closeForm() {
+  showForm.value = false
+  editingIndex.value = null
+  Object.assign(form, blankForm())
+}
+
+function saveActivity() {
   if (!form.subject) {
     toast.error(__('Please add a subject'))
     return
   }
-  lead.doc.activity_log = [...(lead.doc.activity_log || []), { ...form }]
+  const editing = editingIndex.value !== null
+  if (editing) {
+    // Keep the child row's identity (name/idx) so Frappe updates it in place
+    // instead of deleting the row and inserting a replacement.
+    lead.doc.activity_log = activities.value.map((a, i) =>
+      i === editingIndex.value ? { ...a, ...form } : a,
+    )
+  } else {
+    lead.doc.activity_log = [...(lead.doc.activity_log || []), { ...form }]
+  }
   lead.save.submit(null, {
     onSuccess: () => {
-      toast.success(__('Activity logged'))
-      Object.assign(form, blankForm())
-      showForm.value = false
+      toast.success(editing ? __('Activity updated') : __('Activity logged'))
+      closeForm()
     },
     onError: (e) => toast.error(e?.messages?.[0] || __('Could not save activity')),
   })
 }
 
 function deleteActivity(idx) {
+  if (editingIndex.value === idx) closeForm()
   lead.doc.activity_log = activities.value.filter((_, i) => i !== idx)
   lead.save.submit(null, {
     onSuccess: () => toast.success(__('Activity deleted')),
